@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${tituloPantalla}">Catalogo Estatico</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; }
+        .container { margin: 20px 40px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .empty-state { color: #888; font-style: italic; }
+        .btn-primary { padding: 10px; background-color: #008CBA; color: white; text-decoration: none; display: inline-block; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{layout/componentes :: navbar}"></div>
+
+<div class="container">
+    <h1 th:text="${tituloPantalla}">Lista de Libros</h1>
+
+    <div style="margin-bottom: 20px;">
+        <a th:href="@{/admin/libros/nuevo}" class="btn-primary">+ Agregar Nuevo Libro</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(libros)}" class="empty-state">
+        <p>No hay libros registrados en el sistema actualmente.</p>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(libros)}">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Titulo</th>
+            <th>Autor</th>
+            <th>ISBN</th>
+            <th>Anio</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="libro : ${libros}">
+            <td th:text="${libro.id}">1</td>
+            <td th:text="${libro.titulo}">El Quijote</td>
+            <td th:text="${libro.autor}">Cervantes</td>
+            <td th:text="${libro.isbn}">123-456</td>
+            <td th:text="${libro.anioPublicacion}">1605</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:replace="~{layout/componentes :: footer}"></div>
+
+</body>
+</html>
