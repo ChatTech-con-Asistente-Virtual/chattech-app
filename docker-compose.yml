@@ -8,6 +8,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: librotech
       MONGO_INITDB_ROOT_PASSWORD: librotech
+      MONGO_INITDB_DATABASE: librotech_chat
     volumes:
       - mongodb_data:/data/db
 
