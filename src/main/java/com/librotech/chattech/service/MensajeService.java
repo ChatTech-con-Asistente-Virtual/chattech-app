@@ -6,6 +6,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class MensajeService {
     }
 
     public List<Mensaje> obtenerHistorialReciente() {
-        List<Mensaje> mensajes = mensajeRepository.findTop10ByOrderByFechaEnvioDesc();
+        List<Mensaje> mensajes = new ArrayList<>(mensajeRepository.findTop10ByOrderByFechaEnvioDesc());
         Collections.reverse(mensajes);
         return mensajes;
     }
