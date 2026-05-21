@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ChatTech - Sala Inteligente</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f6f8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin-bottom: 5px;
+            color: #222;
+        }
+
+        .header p {
+            margin: 0;
+            color: #666;
+        }
+
+        .nav {
+            margin-bottom: 15px;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .chat-box {
+            border: 1px solid #ccc;
+            height: 430px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+        }
+
+        .msg {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+
+        .msg-usuario {
+            background-color: #d1ecf1;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .msg-bot {
+            background-color: #d4edda;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        .remitente {
+            font-weight: bold;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .fecha {
+            font-size: 0.75em;
+            color: #666;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #remitente {
+            width: 160px;
+        }
+
+        #mensaje {
+            flex-grow: 1;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .status.connected {
+            color: green;
+        }
+
+        .status.disconnected {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="nav">
+        <a th:href="@{/admin/libros}">← Volver al panel de libros</a>
+    </div>
+
+    <div class="header">
+        <h1>Sala de Chat Asistida por IA</h1>
+        <p>ChatTech permite comunicación en tiempo real entre bibliotecarios con apoyo de LibroBot IA.</p>
+    </div>
+
+    <div id="chat-box" class="chat-box">
+
+        <div th:if="${#lists.isEmpty(historial)}">
+            <p>No hay mensajes todavía. Escribe el primer mensaje para iniciar la conversación.</p>
+        </div>
+
+        <div th:each="msg : ${historial}"
+             th:class="${msg.remitente == 'LibroBot IA'} ? 'msg msg-bot' : 'msg msg-usuario'">
+
+            <span class="remitente" th:text="${msg.remitente}">Usuario</span>
+            <span th:text="${msg.contenido}">Texto del mensaje</span>
+            <span class="fecha" th:text="${msg.fechaEnvio}">Fecha</span>
+        </div>
+
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="remitente" placeholder="Tu nombre..." required>
+        <input type="text" id="mensaje" placeholder="Escribe un mensaje..." required>
+        <button type="button" onclick="enviarMensaje()">Enviar</button>
+    </div>
+
+    <div id="estado-conexion" class="status disconnected">
+        Desconectado
+    </div>
+
+</div>
+
+<script>
+    let stompClient = null;
+
+    function conectar() {
+        const socket = new SockJS('/chat-websocket');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            actualizarEstadoConexion(true);
+
+            stompClient.subscribe('/tema/mensajes', function (respuesta) {
+                const mensaje = JSON.parse(respuesta.body);
+                mostrarMensaje(mensaje);
+            });
+        }, function () {
+            actualizarEstadoConexion(false);
+        });
+    }
+
+    function enviarMensaje() {
+        const remitenteInput = document.getElementById('remitente');
+        const mensajeInput = document.getElementById('mensaje');
+
+        const remitente = remitenteInput.value.trim();
+        const contenido = mensajeInput.value.trim();
+
+        if (remitente === '') {
+            alert('Debes escribir tu nombre.');
+            remitenteInput.focus();
+            return;
+        }
+
+        if (contenido === '') {
+            alert('Debes escribir un mensaje.');
+            mensajeInput.focus();
+            return;
+        }
+
+        if (stompClient === null || !stompClient.connected) {
+            alert('No hay conexión con el chat. Intenta recargar la página.');
+            return;
+        }
+
+        const mensaje = {
+            remitente: remitente,
+            contenido: contenido
+        };
+
+        stompClient.send('/app/enviar', {}, JSON.stringify(mensaje));
+        mensajeInput.value = '';
+        mensajeInput.focus();
+    }
+
+    function mostrarMensaje(msg) {
+        const chatBox = document.getElementById('chat-box');
+
+        const nuevoMensaje = document.createElement('div');
+        nuevoMensaje.className = msg.remitente === 'LibroBot IA'
+            ? 'msg msg-bot'
+            : 'msg msg-usuario';
+
+        const remitente = document.createElement('span');
+        remitente.className = 'remitente';
+        remitente.textContent = msg.remitente;
+
+        const contenido = document.createElement('span');
+        contenido.textContent = msg.contenido;
+
+        const fecha = document.createElement('span');
+        fecha.className = 'fecha';
+        fecha.textContent = msg.fechaEnvio ? msg.fechaEnvio : '';
+
+        nuevoMensaje.appendChild(remitente);
+        nuevoMensaje.appendChild(contenido);
+        nuevoMensaje.appendChild(fecha);
+
+        chatBox.appendChild(nuevoMensaje);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function actualizarEstadoConexion(conectado) {
+        const estado = document.getElementById('estado-conexion');
+
+        if (conectado) {
+            estado.textContent = 'Conectado al chat en tiempo real';
+            estado.className = 'status connected';
+        } else {
+            estado.textContent = 'Desconectado del chat';
+            estado.className = 'status disconnected';
+        }
+    }
+
+    document.getElementById('mensaje').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            enviarMensaje();
+        }
+    });
+
+    window.onload = conectar;
+</script>
+
+</body>
+</html>
