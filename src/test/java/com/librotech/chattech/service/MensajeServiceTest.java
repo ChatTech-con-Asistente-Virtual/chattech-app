@@ -122,4 +122,46 @@ class MensajeServiceTest {
         assertEquals("El contenido del mensaje es obligatorio.", exception.getMessage());
         verify(mensajeRepository, never()).save(any());
     }
+
+    @Test
+    void shouldIgnoreClientManagedFieldsWhenSavingUserMessage() {
+        LocalDateTime fechaManipulada = LocalDateTime.of(2000, 1, 1, 0, 0);
+        Mensaje mensaje = new Mensaje("id-manipulado", "Luis", "Hola", fechaManipulada);
+
+        when(mensajeRepository.save(any(Mensaje.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Mensaje resultado = mensajeService.guardarMensajeUsuario(mensaje);
+
+        assertNull(resultado.getId());
+        assertNotEquals(fechaManipulada, resultado.getFechaEnvio());
+        assertEquals("Luis", resultado.getRemitente());
+        assertEquals("Hola", resultado.getContenido());
+    }
+
+    @Test
+    void shouldRejectReservedBotNameForUserMessages() {
+        Mensaje mensaje = new Mensaje(" librobot ia ", "Mensaje falso");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> mensajeService.guardarMensajeUsuario(mensaje)
+        );
+
+        assertEquals("El nombre LibroBot IA está reservado.", exception.getMessage());
+        verify(mensajeRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectContentOverLimit() {
+        Mensaje mensaje = new Mensaje("Luis", "a".repeat(2001));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> mensajeService.guardarMensaje(mensaje)
+        );
+
+        assertEquals("El contenido no puede superar 2000 caracteres.", exception.getMessage());
+        verify(mensajeRepository, never()).save(any());
+    }
 }

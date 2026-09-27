@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongo:7
+    image: mongo:7.0.43
     container_name: librotech
     restart: always
     ports:

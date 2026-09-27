@@ -149,7 +149,7 @@
 
     <div id="chat-box" class="chat-box">
 
-        <div th:if="${#lists.isEmpty(historial)}">
+        <div id="empty-state" th:if="${#lists.isEmpty(historial)}">
             <p>No hay mensajes todavía. Escribe el primer mensaje para iniciar la conversación.</p>
         </div>
 
@@ -164,9 +164,9 @@
     </div>
 
     <div class="input-area">
-        <input type="text" id="remitente" placeholder="Tu nombre..." required>
-        <input type="text" id="mensaje" placeholder="Escribe un mensaje..." required>
-        <button type="button" onclick="enviarMensaje()">Enviar</button>
+        <input type="text" id="remitente" maxlength="60" placeholder="Tu nombre..." required>
+        <input type="text" id="mensaje" maxlength="2000" placeholder="Escribe un mensaje..." required>
+        <button type="button" id="enviar" onclick="enviarMensaje()" disabled>Enviar</button>
     </div>
 
     <div id="estado-conexion" class="status disconnected">
@@ -184,6 +184,7 @@
 
         stompClient.connect({}, function () {
             actualizarEstadoConexion(true);
+            document.getElementById('enviar').disabled = false;
 
             stompClient.subscribe('/tema/mensajes', function (respuesta) {
                 const mensaje = JSON.parse(respuesta.body);
@@ -191,6 +192,7 @@
             });
         }, function () {
             actualizarEstadoConexion(false);
+            document.getElementById('enviar').disabled = true;
         });
     }
 
@@ -230,6 +232,11 @@
 
     function mostrarMensaje(msg) {
         const chatBox = document.getElementById('chat-box');
+        const emptyState = document.getElementById('empty-state');
+
+        if (emptyState) {
+            emptyState.remove();
+        }
 
         const nuevoMensaje = document.createElement('div');
         nuevoMensaje.className = msg.remitente === 'LibroBot IA'
@@ -273,7 +280,17 @@
         }
     });
 
-    window.onload = conectar;
+    window.addEventListener('load', function () {
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+        conectar();
+    });
+
+    window.addEventListener('beforeunload', function () {
+        if (stompClient !== null && stompClient.connected) {
+            stompClient.disconnect();
+        }
+    });
 </script>
 
 </body>

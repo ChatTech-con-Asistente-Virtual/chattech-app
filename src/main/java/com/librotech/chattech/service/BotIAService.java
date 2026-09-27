@@ -5,6 +5,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ public class BotIAService {
     public Mensaje generarRespuestaIA(String preguntaUsuario) {
         validarPregunta(preguntaUsuario);
 
-        String historialMongo = construirHistorialComoTexto();
+        String historialMongo = construirHistorialComoTexto(preguntaUsuario);
         String prompt = construirPrompt(historialMongo, preguntaUsuario);
 
         String respuestaTexto = generarRespuestaConIA(prompt);
@@ -39,10 +40,18 @@ public class BotIAService {
         return mensajeService.guardarMensaje(mensajeBot);
     }
 
-    private String construirHistorialComoTexto() {
-        List<Mensaje> historial = mensajeService.obtenerHistorialReciente();
+    private String construirHistorialComoTexto(String preguntaUsuario) {
+        List<Mensaje> historialReciente = mensajeService.obtenerHistorialReciente();
+        List<Mensaje> historial = historialReciente == null
+                ? new ArrayList<>()
+                : new ArrayList<>(historialReciente);
 
-        if (historial == null || historial.isEmpty()) {
+        if (!historial.isEmpty()
+                && preguntaUsuario.equals(historial.get(historial.size() - 1).getContenido())) {
+            historial.remove(historial.size() - 1);
+        }
+
+        if (historial.isEmpty()) {
             return "No hay historial previo en la conversación.";
         }
 
