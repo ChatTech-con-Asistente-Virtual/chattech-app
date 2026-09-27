@@ -1,0 +1,62 @@
+# ===============================
+# Maven / Java
+# ===============================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# ===============================
+# Logs
+# ===============================
+*.log
+logs/
+
+# ===============================
+# H2 local database
+# ===============================
+data/
+*.db
+*.mv.db
+*.trace.db
+*.lock.db
+
+# ===============================
+# Environment / secrets
+# ===============================
+.env
+.env.*
+application-local.properties
+application-dev.properties
+application-secret.properties
+application-private.properties
+
+# ===============================
+# IDEs
+# ===============================
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# ===============================
+# OS files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Temporary files
+# ===============================
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# ===============================
+# Docker local volumes / overrides
+# ===============================
+docker-compose.override.yml
